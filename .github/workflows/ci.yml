@@ -1,0 +1,32 @@
+# 验证：每次 push / PR 时，在干净环境里把前后端两个镜像各构建一遍，
+# 确保「clone 下来就能 docker compose up -d --build」始终成立。
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  docker-build:
+    name: Build Docker images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./fileshare_server
+          push: false
+          tags: fileshare-backend:ci
+
+      - name: Build web image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./fileshare_browser
+          push: false
+          tags: fileshare-web:ci

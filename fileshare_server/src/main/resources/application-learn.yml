@@ -1,0 +1,68 @@
+server:
+  port: 9090
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        name: FSSESSION
+        http-only: true
+        same-site: lax
+        path: /
+spring:
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+  session:
+    store-type: redis
+    timeout: 30m
+    redis:
+      namespace: fileshare:spring:session
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/test?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&characterEncoding=utf-8
+    username: root
+    password: 114514
+  # MySQL 非嵌入式库时，默认不会执行 classpath 下的建表脚本；未建 fs_node 会导致上传 insert 报错
+  sql:
+    init:
+      mode: always
+      schema-locations:
+        - classpath:schema/user.sql
+        - classpath:schema/fs_node.sql
+        - classpath:schema/fs_node_revision.sql
+        - classpath:schema/project_member.sql
+        - classpath:schema/api_access_log.sql
+      data-locations:
+        - classpath:schema/admin_seed.sql
+      encoding: UTF-8
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 520MB
+
+# 下划线列名与实体驼峰对应（与 MP 默认一致，写明便于排查）
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+
+file:
+  storage:
+    # 物理文件长期存储目录（相对路径相对进程工作目录）
+    root: data/file-storage
+  preview:
+    libreoffice:
+      enabled: true
+      soffice-path: "D:/LibreOffice/program/soffice.bin"
+      max-source-bytes: 52428800
+      timeout-seconds: 120
+
+app:
+  cors:
+    allowed-origin-patterns:
+      - "http://localhost:5173"
+      - "http://localhost:80"
+      - "http://127.0.0.1:5173"
+      - "http://127.0.0.1:80"
+      - "http://localhost:[*]"
+      - "http://127.0.0.1:[*]"

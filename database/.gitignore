@@ -1,0 +1,8 @@
+# 数据库本地文件
+*.sql
+*.dump
+*.rdb
+*.aof
+
+# 保留database目录下的.sql 文件
+!database/*.sql

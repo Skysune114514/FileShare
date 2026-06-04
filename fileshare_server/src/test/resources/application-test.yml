@@ -1,0 +1,27 @@
+# 测试专用配置：激活 profile=test 时生效（与 learn 的 MySQL 隔离）
+# - 关系库：H2 内存库 + schema-test.sql（勿连 learn 的 MySQL）
+# - Session：none（不依赖 Redis 存会话）
+# - Redis：排除自动配置，由 TestRedisConfiguration 提供内存 Mock
+spring:
+  session:
+    store-type: none
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:fileshare_test;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE
+    username: sa
+    password:
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-test.sql
+
+# 物理文件写到临时目录，由测试类 @DynamicPropertySource 覆盖更安全；此处为兜底相对路径
+file:
+  storage:
+    root: target/test-file-storage
+  preview:
+    libreoffice:
+      enabled: false

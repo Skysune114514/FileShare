@@ -1,0 +1,9 @@
+# 后端构建上下文精简：杜绝把编译产物/上传数据/版本库打进镜像
+.git
+.idea
+.vscode
+target
+data
+HELP.md
+*.iml
+.DS_Store

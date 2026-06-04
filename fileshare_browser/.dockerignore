@@ -1,0 +1,9 @@
+# 前端构建上下文精简
+node_modules
+dist
+.git
+.gitignore
+npm-debug.log
+.DS_Store
+*.map
+.vscode

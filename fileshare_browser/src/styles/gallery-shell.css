@@ -1,0 +1,154 @@
+/* 与广场页一致：全屏模糊背景 + 中间 70% 内容区 + 白条 */
+
+.gallery-shell-page {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding-left: max(1.25rem, env(safe-area-inset-left));
+  padding-right: max(1.25rem, env(safe-area-inset-right));
+}
+
+.gallery-shell-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  filter: blur(15px);
+  transform: scale(1.12);
+}
+
+.gallery-shell-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: rgba(248, 250, 252, 0.74);
+  pointer-events: none;
+}
+
+.gallery-shell-content {
+  position: relative;
+  z-index: 1;
+  width: 70%;
+  max-width: none;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+  padding: 1.25rem 0 2.5rem;
+  font-family: system-ui, sans-serif;
+}
+
+/* 登录/注册：外壳上下留白对称，避免白条相对视区“上窄下宽” */
+.gallery-shell-content:has(> .gallery-auth-center) {
+  padding-top: 2.5rem;
+  padding-bottom: 2.5rem;
+}
+
+.gallery-shell-strip {
+  width: 100%;
+  background: #fff;
+  padding: 1rem 1.25rem;
+  border: 1px solid #9e9e9e;
+  border-radius: 10px;
+  box-sizing: border-box;
+  margin-bottom: 1rem;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+/* 「我的文件」「浏览广场」主内容区：再加大左右留白 */
+.gallery-shell-strip--roomy {
+  padding: 1.2rem 1.85rem;
+}
+
+.gallery-shell-strip:last-child {
+  margin-bottom: 0;
+}
+
+.gallery-shell-head .sub,
+.page-head.gallery-shell-strip .sub {
+  max-width: none;
+}
+
+.gallery-auth-center {
+  min-height: min(78vh, 640px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gallery-auth-card {
+  width: 100%;
+  max-width: min(100%, 34rem);
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  box-sizing: border-box;
+}
+
+.gallery-auth-inner {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: left;
+}
+
+.gallery-auth-head-block {
+  padding-left: 15px;
+  padding-right: 0;
+}
+
+.gallery-auth-brand {
+  margin: 0 0 0.5rem;
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #1565c0;
+}
+
+/* 表单：整块水平居中，表单项内仍左对齐；页脚：整块居中且页脚内文字居中 */
+.gallery-auth-inner .form,
+.gallery-auth-inner .foot {
+  align-self: center;
+  width: 100%;
+  max-width: 22rem;
+  box-sizing: border-box;
+}
+
+.gallery-auth-inner .foot {
+  text-align: center;
+}
+
+/* 表单区域：固定最大宽度，标签与输入左对齐、输入拉满 */
+.gallery-auth-inner .form {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.gallery-auth-inner h1 {
+  width: 100%;
+}
+
+.gallery-auth-inner .sub {
+  width: 100%;
+}
+
+.gallery-auth-inner label {
+  text-align: left;
+}
+
+.gallery-auth-inner input {
+  text-align: left;
+}
+
+.gallery-auth-center .gallery-shell-strip {
+  margin-bottom: 0;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}

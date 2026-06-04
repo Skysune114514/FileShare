@@ -1,0 +1,125 @@
+# =============================================================================
+# FileShare 一键编排：mysql + redis + backend(Spring Boot) + web(nginx+前端)
+# 默认用官方 Docker Hub 基础镜像；国内网络下在 .env 里设一行 REGISTRY_PREFIX 即可整体切换
+# （如 REGISTRY_PREFIX=docker.m.daocloud.io/library/，留空 = 官方 Docker Hub）。
+# 构建时容器内的 apt/maven/npm 已由 Dockerfile 指向国内源。
+# 构建：docker compose build
+# 启动：docker compose up -d
+# 访问：http://localhost（WEB_PORT 可改，默认 80）
+# =============================================================================
+name: fileshare
+
+services:
+  mysql:
+    # REGISTRY_PREFIX 留空=官方 Docker Hub；国内可设 docker.m.daocloud.io/library/ 等前缀。
+    image: ${REGISTRY_PREFIX:-}mysql:8.0
+    container_name: fileshare-mysql
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --innodb-buffer-pool-size=128M
+      - --max-connections=100
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-fileshare_root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-fileshare}
+      MYSQL_USER: ${MYSQL_USER:-fileshare}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-fileshare_pass}
+      TZ: Asia/Shanghai
+    volumes:
+      # 数据落命名卷，删除容器/重建镜像不丢数据；首次启动自动建库建用户。
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    mem_limit: 1024m
+    networks: [fileshare-net]
+
+  redis:
+    image: ${REGISTRY_PREFIX:-}redis:7-alpine
+    container_name: fileshare-redis
+    restart: unless-stopped
+    # 仅存 Spring Session 且有 TTL，volatile-lru 容量内逐出过期键即可；限制内存占用量。
+    command: ["redis-server", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "volatile-lru"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    mem_limit: 128m
+    networks: [fileshare-net]
+
+  backend:
+    build:
+      context: ./fileshare_server
+      # 基础镜像来源（REGISTRY_PREFIX 前缀 + 官方镜像名）。
+      args:
+        MAVEN_IMAGE: ${REGISTRY_PREFIX:-}maven:3.9-eclipse-temurin-17
+        JRE_IMAGE: ${REGISTRY_PREFIX:-}eclipse-temurin:17-jre
+    image: fileshare-backend:latest
+    container_name: fileshare-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # 激活 learn profile，并覆盖 application-learn.yml 里指向 localhost 的写死配置。
+      SPRING_PROFILES_ACTIVE: learn
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-fileshare}?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf-8&allowPublicKeyRetrieval=true"
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-fileshare}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-fileshare_pass}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
+      # 上传文件 + 预览缓存统一存到该卷（file.storage.root）。
+      FILE_STORAGE_ROOT: /data/file-storage
+      # LibreOffice 容器内路径（Ubuntu 系 /usr/bin/soffice）。
+      FILE_PREVIEW_LIBREOFFICE_ENABLED: "true"
+      FILE_PREVIEW_LIBREOFFICE_SOFFICE_PATH: /usr/bin/soffice
+      TZ: Asia/Shanghai
+    volumes:
+      - file-storage:/data/file-storage
+    healthcheck:
+      # 显式调用 bash：Ubuntu 的 /bin/sh 是 dash，不支持 /dev/tcp 重定向，
+      # 用 CMD-SHELL 会导致探针恒失败（容器明明在监听却报 unhealthy）。
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/9090"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 60s
+    mem_limit: 2048m
+    networks: [fileshare-net]
+
+  web:
+    build:
+      context: ./fileshare_browser
+      args:
+        NODE_IMAGE: ${REGISTRY_PREFIX:-}node:20-alpine
+        NGINX_IMAGE: ${REGISTRY_PREFIX:-}nginx:1.27-alpine
+    image: fileshare-web:latest
+    container_name: fileshare-web
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-80}:80"
+    mem_limit: 256m
+    networks: [fileshare-net]
+
+volumes:
+  mysql-data:
+  redis-data:
+  file-storage:
+
+networks:
+  fileshare-net:
+    driver: bridge
+    driver_opts:
+      # 宿主机 WSL eth0 MTU 为 1280，容器网卡对齐，避免大包丢包导致卡顿。
+      # 若你已把 Docker Desktop 的 daemon mtu 设为 1280，可删掉这两行。
+      com.docker.network.driver.mtu: "1280"
